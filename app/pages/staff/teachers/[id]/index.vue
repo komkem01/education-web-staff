@@ -22,7 +22,7 @@
           </div>
         </div>
         <div class="header-actions">
-          <button type="button" class="btn btn-edit" @click="showEdit = true">แก้ไข</button>
+          <button type="button" class="btn btn-edit" @click="openEdit">แก้ไข</button>
         </div>
       </div>
 
@@ -88,12 +88,12 @@
       </div>
 
       <!-- Edit Modal -->
-      <StaffAppModal v-model="showEdit" title="แก้ไขข้อมูลครู" size="md">
+      <StaffAppModal v-model="showEdit" :title="editModalTitle" size="md">
         <template #footer>
           <button type="button" class="btn btn-secondary" @click="showEdit = false">ยกเลิก</button>
           <button type="button" class="btn btn-primary" @click="saveEdit">บันทึก</button>
         </template>
-        <div class="form-body">
+        <div v-if="editMode === 'general'" class="form-body">
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">คำนำหน้า</label>
@@ -144,14 +144,89 @@
             </div>
           </div>
         </div>
+        <div v-else-if="editMode === 'education'" class="form-body">
+          <div class="form-tools">
+            <button type="button" class="btn btn-secondary btn-sm" @click="addEducationRecord">+ เพิ่มวุฒิการศึกษา</button>
+          </div>
+          <div v-if="educationForm.length === 0" class="empty-state">ยังไม่มีข้อมูลประวัติการศึกษา</div>
+          <div v-for="(edu, idx) in educationForm" :key="`edu-${idx}`" class="edit-block">
+            <div class="edit-block-head">
+              <strong>รายการที่ {{ idx + 1 }}</strong>
+              <button type="button" class="btn btn-delete btn-sm" @click="removeEducationRecord(idx)">ลบ</button>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">วุฒิการศึกษา</label>
+                <input v-model="edu.degree" class="input" type="text" placeholder="ปริญญาตรี" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">สาขา</label>
+                <input v-model="edu.major" class="input" type="text" placeholder="คณิตศาสตร์ศึกษา" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">สถาบัน</label>
+                <input v-model="edu.institution" class="input" type="text" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">ปีที่จบ</label>
+                <input v-model="edu.year" class="input" type="text" placeholder="2566" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">GPA</label>
+                <input v-model="edu.gpa" class="input" type="text" placeholder="3.50" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="form-body">
+          <div class="form-tools">
+            <button type="button" class="btn btn-secondary btn-sm" @click="addWorkRecord">+ เพิ่มประวัติการทำงาน</button>
+          </div>
+          <div v-if="workForm.length === 0" class="empty-state">ยังไม่มีข้อมูลประวัติการทำงาน</div>
+          <div v-for="(work, idx) in workForm" :key="`work-${idx}`" class="edit-block">
+            <div class="edit-block-head">
+              <strong>รายการที่ {{ idx + 1 }}</strong>
+              <button type="button" class="btn btn-delete btn-sm" @click="removeWorkRecord(idx)">ลบ</button>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">ตำแหน่ง</label>
+                <input v-model="work.position" class="input" type="text" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">หน่วยงาน</label>
+                <input v-model="work.organization" class="input" type="text" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">ปีเริ่มต้น</label>
+                <input v-model="work.startYear" class="input" type="text" placeholder="2560" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">ปีสิ้นสุด</label>
+                <input v-model="work.endYear" class="input" type="text" placeholder="ปัจจุบัน" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">หมายเหตุ</label>
+                <input v-model="work.note" class="input" type="text" />
+              </div>
+            </div>
+          </div>
+        </div>
       </StaffAppModal>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useTeachersData } from '~/composables/useTeachersData'
+import type { EducationRecord, WorkRecord } from '~/composables/useTeachersData'
 
 definePageMeta({ layout: 'staff' })
 
@@ -169,18 +244,62 @@ const tabs = [
 ]
 
 const showEdit = ref(false)
+const editMode = ref<'general' | 'education' | 'work'>('general')
 const editForm = ref({ prefix: '', firstName: '', lastName: '', email: '', phone: '', subjectGroup: '', position: '', advisorClass: '', joinDate: '' })
+const educationForm = ref<EducationRecord[]>([])
+const workForm = ref<WorkRecord[]>([])
 
-watch(showEdit, (v) => {
-  if (v && teacher.value) {
-    const t = teacher.value
-    editForm.value = { prefix: t.prefix, firstName: t.firstName, lastName: t.lastName, email: t.email, phone: t.phone, subjectGroup: t.subjectGroup, position: t.position, advisorClass: t.advisorClass, joinDate: t.joinDate }
-  }
+const editModalTitle = computed(() => {
+  if (editMode.value === 'education') return 'แก้ไขประวัติการศึกษา'
+  if (editMode.value === 'work') return 'แก้ไขประวัติการทำงาน'
+  return 'แก้ไขข้อมูลครู'
 })
 
+function openEdit() {
+  if (!teacher.value) return
+  const t = teacher.value
+  editMode.value = activeTab.value
+  editForm.value = {
+    prefix: t.prefix,
+    firstName: t.firstName,
+    lastName: t.lastName,
+    email: t.email,
+    phone: t.phone,
+    subjectGroup: t.subjectGroup,
+    position: t.position,
+    advisorClass: t.advisorClass,
+    joinDate: t.joinDate,
+  }
+  educationForm.value = t.education.map(edu => ({ ...edu }))
+  workForm.value = t.workHistory.map(work => ({ ...work }))
+  showEdit.value = true
+}
+
 function saveEdit() {
-  updateRow(id, editForm.value)
+  if (editMode.value === 'general') {
+    updateRow(id, editForm.value)
+  } else if (editMode.value === 'education') {
+    updateRow(id, { education: educationForm.value.map(edu => ({ ...edu })) })
+  } else {
+    updateRow(id, { workHistory: workForm.value.map(work => ({ ...work })) })
+  }
   showEdit.value = false
+}
+
+function addEducationRecord() {
+  educationForm.value.push({ degree: '', major: '', institution: '', year: '', gpa: '' })
+}
+
+function removeEducationRecord(index: number) {
+  educationForm.value.splice(index, 1)
+}
+
+function addWorkRecord() {
+  workForm.value.push({ position: '', organization: '', startYear: '', endYear: '', note: '' })
+}
+
+function removeWorkRecord(index: number) {
+  workForm.value.splice(index, 1)
 }
 </script>
 
@@ -231,10 +350,22 @@ function saveEdit() {
 .btn-primary:hover { background: #1e40af; }
 
 .form-body { display: flex; flex-direction: column; gap: 14px; }
+.form-tools { display: flex; justify-content: flex-end; }
 .form-row { display: flex; gap: 12px; }
 .form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; }
 .form-group.flex-2 { flex: 2; }
 .form-label { font-size: 0.8rem; font-weight: 600; color: #374151; }
 .input { width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.875rem; font-family: inherit; color: #111827; background: #fff; outline: none; box-sizing: border-box; }
 .input:focus { border-color: #1d4ed8; }
+
+.edit-block { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; background: #fafafa; }
+.edit-block-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 0.82rem; color: #374151; }
+
+.btn-delete { border-color: #fecaca; color: #b91c1c; background: #fff1f2; }
+.btn-delete:hover { background: #ffe4e6; }
+.btn-sm { padding: 6px 10px; font-size: 0.78rem; }
+
+@media (max-width: 900px) {
+  .form-row { flex-direction: column; }
+}
 </style>

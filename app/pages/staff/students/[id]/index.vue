@@ -22,7 +22,7 @@
           </div>
         </div>
         <div class="header-actions">
-          <button type="button" class="btn btn-edit" @click="showEdit = true">แก้ไข</button>
+          <button type="button" class="btn btn-edit" @click="openEdit">แก้ไข</button>
         </div>
       </div>
 
@@ -85,12 +85,12 @@
       </div>
 
       <!-- Edit Modal -->
-      <StaffAppModal v-model="showEdit" title="แก้ไขข้อมูลนักเรียน" size="md">
+      <StaffAppModal v-model="showEdit" :title="editModalTitle" size="md">
         <template #footer>
           <button type="button" class="btn btn-secondary" @click="showEdit = false">ยกเลิก</button>
           <button type="button" class="btn btn-primary" @click="saveEdit">บันทึก</button>
         </template>
-        <div class="form-body">
+        <div v-if="editMode === 'general'" class="form-body">
           <div class="form-row">
             <div class="form-group flex-2">
               <label class="form-label">ชื่อ-นามสกุล</label>
@@ -118,14 +118,77 @@
             </div>
           </div>
         </div>
+        <div v-else-if="editMode === 'parent'" class="form-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">ความสัมพันธ์</label>
+              <select v-model="parentForm.relation" class="input">
+                <option>บิดา</option>
+                <option>มารดา</option>
+                <option>ปู่</option>
+                <option>ย่า</option>
+                <option>ตา</option>
+                <option>ยาย</option>
+                <option>ผู้ปกครอง</option>
+              </select>
+            </div>
+            <div class="form-group flex-2">
+              <label class="form-label">ชื่อผู้ปกครอง</label>
+              <input v-model="parentForm.name" class="input" type="text" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">เบอร์โทรศัพท์</label>
+              <input v-model="parentForm.phone" class="input" type="tel" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">อาชีพ</label>
+              <input v-model="parentForm.occupation" class="input" type="text" />
+            </div>
+          </div>
+        </div>
+        <div v-else class="form-body">
+          <div class="form-tools">
+            <button type="button" class="btn btn-secondary btn-sm" @click="addAcademicRecord">+ เพิ่มประวัติวิชาการ</button>
+          </div>
+          <div v-if="academicForm.length === 0" class="empty-state">ยังไม่มีข้อมูลประวัติวิชาการ</div>
+          <div v-for="(record, idx) in academicForm" :key="`acad-${idx}`" class="edit-block">
+            <div class="edit-block-head">
+              <strong>รายการที่ {{ idx + 1 }}</strong>
+              <button type="button" class="btn btn-delete btn-sm" @click="removeAcademicRecord(idx)">ลบ</button>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">ปีการศึกษา</label>
+                <input v-model="record.year" class="input" type="text" placeholder="2566" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">ภาคเรียน</label>
+                <input v-model="record.semester" class="input" type="text" placeholder="1" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">GPA</label>
+                <input v-model="record.gpa" class="input" type="text" placeholder="3.50" />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">หมายเหตุ</label>
+                <input v-model="record.note" class="input" type="text" />
+              </div>
+            </div>
+          </div>
+        </div>
       </StaffAppModal>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed } from 'vue'
 import { useStudentsData } from '~/composables/useStudentsData'
+import type { ParentInfo, AcademicRecord } from '~/composables/useStudentsData'
 
 definePageMeta({ layout: 'staff' })
 
@@ -143,18 +206,50 @@ const tabs = [
 ]
 
 const showEdit = ref(false)
+const editMode = ref<'general' | 'parent' | 'academic'>('general')
 const editForm = ref({ name: '', class: '', advisor: '', gpa: '', discipline: 0 })
+const parentForm = ref<ParentInfo>({ relation: 'ผู้ปกครอง', name: '', phone: '', occupation: '' })
+const academicForm = ref<AcademicRecord[]>([])
 
-watch(showEdit, (v) => {
-  if (v && student.value) {
-    const s = student.value
-    editForm.value = { name: s.name, class: s.class, advisor: s.advisor, gpa: s.gpa, discipline: s.discipline }
-  }
+const editModalTitle = computed(() => {
+  if (editMode.value === 'parent') return 'แก้ไขข้อมูลผู้ปกครอง'
+  if (editMode.value === 'academic') return 'แก้ไขประวัติวิชาการ'
+  return 'แก้ไขข้อมูลนักเรียน'
 })
 
+function openEdit() {
+  if (!student.value) return
+  const s = student.value
+  editMode.value = activeTab.value
+  editForm.value = {
+    name: s.name,
+    class: s.class,
+    advisor: s.advisor,
+    gpa: s.gpa,
+    discipline: s.discipline,
+  }
+  parentForm.value = { ...s.parent }
+  academicForm.value = s.academicHistory.map(record => ({ ...record }))
+  showEdit.value = true
+}
+
 function saveEdit() {
-  updateRow(id, editForm.value)
+  if (editMode.value === 'general') {
+    updateRow(id, editForm.value)
+  } else if (editMode.value === 'parent') {
+    updateRow(id, { parent: { ...parentForm.value } })
+  } else {
+    updateRow(id, { academicHistory: academicForm.value.map(record => ({ ...record })) })
+  }
   showEdit.value = false
+}
+
+function addAcademicRecord() {
+  academicForm.value.push({ year: '', semester: '', gpa: '', note: '' })
+}
+
+function removeAcademicRecord(index: number) {
+  academicForm.value.splice(index, 1)
 }
 
 const gpaClass = computed(() => {
@@ -225,10 +320,22 @@ const discLabel = computed(() => {
 .btn-primary:hover { background: #1e40af; }
 
 .form-body { display: flex; flex-direction: column; gap: 14px; }
+.form-tools { display: flex; justify-content: flex-end; }
 .form-row { display: flex; gap: 12px; }
 .form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; }
 .form-group.flex-2 { flex: 2; }
 .form-label { font-size: 0.8rem; font-weight: 600; color: #374151; }
 .input { width: 100%; padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.875rem; font-family: inherit; color: #111827; background: #fff; outline: none; box-sizing: border-box; }
 .input:focus { border-color: #1d4ed8; }
+
+.edit-block { border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; background: #fafafa; }
+.edit-block-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 0.82rem; color: #374151; }
+
+.btn-delete { border-color: #fecaca; color: #b91c1c; background: #fff1f2; }
+.btn-delete:hover { background: #ffe4e6; }
+.btn-sm { padding: 6px 10px; font-size: 0.78rem; }
+
+@media (max-width: 900px) {
+  .form-row { flex-direction: column; }
+}
 </style>
