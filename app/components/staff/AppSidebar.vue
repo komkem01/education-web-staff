@@ -223,7 +223,7 @@ watch(() => route.path, syncOpenGroup)
 .logo-mark {
   width: 32px;
   height: 32px;
-  background: #1d4ed8;
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -387,9 +387,10 @@ watch(() => route.path, syncOpenGroup)
 }
 
 .nav-item--active {
-  background: #1e3a5f !important;
+  background: rgba(29,78,216,.15) !important;
   color: #93c5fd !important;
   font-weight: 500;
+  border-right: 3px solid #1d4ed8;
 }
 
 .nav-item--icon {
