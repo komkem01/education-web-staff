@@ -270,7 +270,7 @@ function clearFilters() { search.value = ''; filterStatus.value = ''; filterPrio
 .btn-reject-footer { background: #fff; color: #dc2626; border-color: #fecaca; }
 .btn-reject-footer:hover { background: #fee2e2; }
 
-.action-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.action-btns { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: nowrap; }
 
 .priority-badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
 .priority-urgent { background: #fef2f2; color: #dc2626; }

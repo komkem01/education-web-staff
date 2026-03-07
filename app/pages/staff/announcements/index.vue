@@ -192,9 +192,9 @@ function clearFilters() { search.value = ''; filterStatus.value = '' }
 .btn-view:hover { background: #f3f4f6; }
 .btn-edit { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
 .btn-edit:hover { background: #dbeafe; }
-.btn-delete { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+.btn-delete { background: #fff5f5; color: #dc2626; border-color: #fecaca; }
 .btn-delete:hover { background: #fee2e2; }
-.action-btns { display: flex; gap: 6px; }
+.action-btns { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: nowrap; }
 .own-badge { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 999px; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; }
 .form-col { display: flex; flex-direction: column; gap: 14px; }
 .form-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }

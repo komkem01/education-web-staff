@@ -325,7 +325,7 @@ function clearFilters() { search.value = ''; filterRelation.value = '' }
 .btn-delete { background: #fff5f5; color: #dc2626; border-color: #fecaca; }
 .btn-delete:hover { background: #fee2e2; }
 
-.action-btns { display: flex; gap: 6px; }
+.action-btns { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: nowrap; }
 
 .detail-body { display: flex; flex-direction: column; gap: 12px; }
 .detail-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }

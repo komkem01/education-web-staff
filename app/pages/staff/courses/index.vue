@@ -111,7 +111,7 @@ function clearFilters() {
 .btn-detail:hover { background: #f9fafb; }
 .btn-primary { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
 .btn-primary:hover { background: #1e40af; }
-.action-btns { display: flex; gap: 6px; }
+.action-btns { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: nowrap; }
 .detail-body { display: flex; flex-direction: column; gap: 14px; }
 .detail-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .detail-label { font-size: 0.83rem; color: #9ca3af; font-weight: 500; min-width: 110px; }

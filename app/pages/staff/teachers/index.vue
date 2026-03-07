@@ -4,8 +4,8 @@
     <template v-else>
       <div class="page-header">
         <div>
-          <h2 class="page-title">จัดการครู</h2>
-          <p class="page-desc">จัดการข้อมูลครูและอนุมัติการลงทะเบียนครูใหม่</p>
+          <h2 class="page-title">รายชื่อครู</h2>
+          <p class="page-desc">ครูที่ได้รับการอนุมัติทั้งหมดในระบบ</p>
         </div>
         <button type="button" class="btn btn-primary" @click="openAdd">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -16,7 +16,18 @@
       <div class="filter-row">
         <div class="search-wrap">
           <svg class="search-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="#9ca3af" stroke-width="1.4"/><path d="M10 10l3 3" stroke="#9ca3af" stroke-width="1.4" stroke-linecap="round"/></svg>
-          <input v-model="search" class="input search" type="text" placeholder="ค้นหาชื่อ หรือ รหัสครู..." autocomplete="off" />
+          <input
+            v-model="search"
+            class="input search"
+            list="teacher-search-list"
+            type="text"
+            placeholder="ค้นหาชื่อ หรือ รหัสครู..."
+            autocomplete="off"
+          />
+          <datalist id="teacher-search-list">
+            <option v-for="r in filteredRows" :key="r.id" :value="`${r.firstName} ${r.lastName}`" />
+            <option v-for="r in filteredRows" :key="r.id + '-id'" :value="r.id" />
+          </datalist>
         </div>
         <select v-model="filterSubject" class="input sel">
           <option value="">กลุ่มสาระทั้งหมด</option>
@@ -28,27 +39,14 @@
           <option>ศิลปะ</option>
           <option>พลศึกษา</option>
         </select>
-        <select v-model="filterStatus" class="input sel">
-          <option value="">สถานะทั้งหมด</option>
-          <option>อนุมัติแล้ว</option>
-          <option>รออนุมัติ</option>
-          <option>ระงับ</option>
-        </select>
-        <button v-if="search || filterSubject || filterStatus" type="button" class="btn btn-clear" @click="clearFilters">ล้างตัวกรอง</button>
+        <button v-if="search || filterSubject" type="button" class="btn btn-clear" @click="clearFilters">ล้างตัวกรอง</button>
       </div>
 
-      <StaffDataTable title="รายชื่อครูทั้งหมด" :columns="cols" :rows="filteredRows">
-        <template #cell-status="{ value }">
-          <StaffStatusBadge
-            :label="value as string"
-            :variant="value === 'อนุมัติแล้ว' ? 'approved' : value === 'รออนุมัติ' ? 'pending' : 'default'"
-          />
-        </template>
+      <StaffDataTable title="รายชื่อครูที่ได้รับการอนุมัติ" :columns="cols" :rows="filteredRows">
         <template #rowActions="{ row }">
           <div class="action-btns">
             <button type="button" class="btn btn-sm btn-detail" @click="navigateTo('/staff/teachers/' + (row as unknown as TeacherRow).id)">รายละเอียด</button>
             <button type="button" class="btn btn-sm btn-edit" @click="openEdit(row as unknown as TeacherRow)">แก้ไข</button>
-            <button v-if="(row as unknown as TeacherRow).status === 'รออนุมัติ'" type="button" class="btn btn-sm btn-approve" @click="approveTeacher(row as unknown as TeacherRow)">อนุมัติ</button>
             <button type="button" class="btn btn-sm btn-delete" @click="confirmDelete(row as unknown as TeacherRow)">ลบ</button>
           </div>
         </template>
@@ -174,11 +172,10 @@ import { useTeachersData, type TeacherRow } from '~/composables/useTeachersData'
 definePageMeta({ layout: 'staff' })
 
 const { loading } = usePageLoad()
-const { rows, addRow, updateRow, deleteRow, approveRow } = useTeachersData()
+const { rows, addRow, updateRow, deleteRow } = useTeachersData()
 
 const search = ref('')
 const filterSubject = ref('')
-const filterStatus = ref('')
 const showDetail = ref(false)
 const showForm = ref(false)
 const showDeleteConfirm = ref(false)
@@ -208,17 +205,16 @@ const cols = [
   { key: 'subjectGroup', label: 'กลุ่มสาระ' },
   { key: 'position', label: 'ตำแหน่ง' },
   { key: 'advisorClass', label: 'ที่ปรึกษา' },
-  { key: 'status', label: 'สถานะ' },
 ]
 
 const filteredRows = computed(() =>
   rows.value.filter(r => {
+    if (r.status !== 'อนุมัติแล้ว') return false
     const q = search.value.toLowerCase()
     const fullName = `${r.firstName} ${r.lastName}`.toLowerCase()
     const matchSearch = !q || fullName.includes(q) || r.id.toLowerCase().includes(q)
     const matchSubject = !filterSubject.value || r.subjectGroup === filterSubject.value
-    const matchStatus = !filterStatus.value || r.status === filterStatus.value
-    return matchSearch && matchSubject && matchStatus
+    return matchSearch && matchSubject
   })
 )
 
@@ -280,14 +276,9 @@ function doDelete() {
   }
 }
 
-function approveTeacher(row: TeacherRow) {
-  approveRow(row.id)
-}
-
 function clearFilters() {
   search.value = ''
   filterSubject.value = ''
-  filterStatus.value = ''
 }
 </script>
 
@@ -382,7 +373,7 @@ function clearFilters() {
 .btn-delete { background: #fff5f5; color: #dc2626; border-color: #fecaca; }
 .btn-delete:hover { background: #fee2e2; }
 
-.action-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.action-btns { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: nowrap; }
 
 .detail-body { display: flex; flex-direction: column; gap: 14px; }
 .detail-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

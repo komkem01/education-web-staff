@@ -1,60 +1,85 @@
 <template>
   <div class="page">
-    <div class="back-row">
-      <button type="button" class="btn-back" @click="navigateTo('/staff/students')">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        กลับรายการนักเรียน
-      </button>
-    </div>
-
     <div v-if="!student" class="not-found">
+      <button type="button" class="btn btn-back" @click="navigateTo('/staff/students')">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7 2L3 6l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        กลับ
+      </button>
       <p>ไม่พบข้อมูลนักเรียนเลขประจำตัว {{ id }}</p>
-      <button type="button" class="btn btn-secondary" @click="navigateTo('/staff/students')">กลับ</button>
     </div>
 
     <template v-else>
-      <!-- Profile Header -->
-      <div class="profile-card">
-        <div class="avatar">{{ student.name[0] }}</div>
-        <div class="profile-info">
-          <h2 class="profile-name">{{ student.name }}</h2>
-          <p class="profile-sub">{{ student.class }} · ครูที่ปรึกษา: {{ student.advisor }}</p>
-          <p class="profile-id">เลขประจำตัว: <span class="id-badge">{{ student.id }}</span></p>
+      <!-- Header -->
+      <div class="page-header">
+        <div class="header-left">
+          <button type="button" class="btn btn-back" @click="navigateTo('/staff/students')">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7 2L3 6l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            กลับ
+          </button>
+          <div>
+            <h2 class="page-title">{{ student.name }}</h2>
+            <p class="page-desc">{{ student.class }} · เลขประจำตัว {{ student.id }}</p>
+          </div>
         </div>
-        <div class="profile-actions">
-          <StaffStatusBadge
-            :label="student.status"
-            :variant="student.status === 'ปกติ' ? 'approved' : student.status === 'รออนุมัติ' ? 'pending' : 'default'"
-          />
-          <button v-if="student.status === 'รออนุมัติ'" type="button" class="btn btn-approve-lg" @click="doApprove">อนุมัติ</button>
-          <button type="button" class="btn btn-edit-lg" @click="showEdit = true">แก้ไขข้อมูล</button>
+        <div class="header-actions">
+          <button type="button" class="btn btn-edit" @click="showEdit = true">แก้ไข</button>
         </div>
       </div>
 
-      <!-- Detail Sections -->
-      <div class="sections">
-        <!-- Academic -->
-        <div class="section-card">
-          <h3 class="section-title">ข้อมูลวิชาการ</h3>
-          <div class="field"><span class="fl">ชั้น/ห้อง</span><span class="fv">{{ student.class }}</span></div>
-          <div class="field"><span class="fl">ครูที่ปรึกษา</span><span class="fv">{{ student.advisor }}</span></div>
-          <div class="field"><span class="fl">เกรดเฉลี่ย (GPA)</span><span class="fv gpa" :class="gpaClass">{{ student.gpa }}</span></div>
-        </div>
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button v-for="t in tabs" :key="t.key" type="button" class="tab-btn" :class="{ 'tab-btn--active': activeTab === t.key }" @click="activeTab = t.key">
+          {{ t.label }}
+        </button>
+      </div>
 
-        <!-- Discipline -->
-        <div class="section-card">
-          <h3 class="section-title">ข้อมูลวินัย</h3>
-          <div class="field"><span class="fl">คะแนนความประพฤติ</span>
-            <span class="fv disc" :class="discClass">{{ student.discipline }}<span class="disc-max">/100</span></span>
+      <!-- Tab: ข้อมูลนักเรียน -->
+      <div v-show="activeTab === 'general'">
+        <div class="detail-card">
+          <p class="section-title">ข้อมูลวิชาการ</p>
+          <div class="detail-grid">
+            <div class="detail-item"><span class="detail-label">เลขประจำตัว</span><span class="detail-value mono">{{ student.id }}</span></div>
+            <div class="detail-item"><span class="detail-label">ชั้น/ห้อง</span><span class="detail-value">{{ student.class }}</span></div>
+            <div class="detail-item"><span class="detail-label">ครูที่ปรึกษา</span><span class="detail-value">{{ student.advisor }}</span></div>
+            <div class="detail-item"><span class="detail-label">เกรดเฉลี่ย (GPA)</span><span class="detail-value" :class="gpaClass">{{ student.gpa }}</span></div>
           </div>
-          <div class="field"><span class="fl">ระดับ</span><span class="fv">{{ discLabel }}</span></div>
         </div>
+        <div class="detail-card" style="margin-top:16px">
+          <p class="section-title">ข้อมูลความประพฤติ</p>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">คะแนนความประพฤติ</span>
+              <span class="detail-value" :class="discClass">{{ student.discipline }}<span class="disc-max">/100</span></span>
+            </div>
+            <div class="detail-item"><span class="detail-label">ระดับ</span><span class="detail-value">{{ discLabel }}</span></div>
+          </div>
+        </div>
+      </div>
 
-        <!-- Status -->
-        <div class="section-card">
-          <h3 class="section-title">สถานะการเรียน</h3>
-          <div class="field"><span class="fl">สถานะ</span>
-            <StaffStatusBadge :label="student.status" :variant="student.status === 'ปกติ' ? 'approved' : student.status === 'รออนุมัติ' ? 'pending' : 'default'" />
+      <!-- Tab: ผู้ปกครอง -->
+      <div v-show="activeTab === 'parent'">
+        <div class="detail-card">
+          <p class="section-title">ข้อมูลผู้ปกครอง</p>
+          <div class="detail-grid">
+            <div class="detail-item"><span class="detail-label">ความสัมพันธ์</span><span class="detail-value">{{ student.parent.relation }}</span></div>
+            <div class="detail-item"><span class="detail-label">ชื่อผู้ปกครอง</span><span class="detail-value">{{ student.parent.name }}</span></div>
+            <div class="detail-item"><span class="detail-label">เบอร์โทรศัพท์</span><span class="detail-value">{{ student.parent.phone }}</span></div>
+            <div class="detail-item"><span class="detail-label">อาชีพ</span><span class="detail-value">{{ student.parent.occupation }}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: ประวัติวิชาการ -->
+      <div v-show="activeTab === 'academic'">
+        <div class="detail-card">
+          <p class="section-title">ประวัติวิชาการ</p>
+          <div v-if="student.academicHistory.length === 0" class="empty-state">ยังไม่มีข้อมูลประวัติวิชาการ</div>
+          <div v-for="(rec, idx) in student.academicHistory" :key="idx" class="history-card">
+            <div class="hc-title">ปีการศึกษา {{ rec.year }} เทอม {{ rec.semester }}</div>
+            <div class="hc-meta">
+              <span>GPA {{ rec.gpa }}</span>
+              <span>{{ rec.note }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -91,15 +116,6 @@
               <label class="form-label">คะแนนความประพฤติ</label>
               <input v-model.number="editForm.discipline" class="input" type="number" min="0" max="100" />
             </div>
-            <div class="form-group">
-              <label class="form-label">สถานะ</label>
-              <select v-model="editForm.status" class="input">
-                <option>ปกติ</option>
-                <option>รออนุมัติ</option>
-                <option>ย้ายออก</option>
-                <option>พ้นสภาพ</option>
-              </select>
-            </div>
           </div>
         </div>
       </StaffAppModal>
@@ -108,7 +124,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useStudentsData } from '~/composables/useStudentsData'
 
 definePageMeta({ layout: 'staff' })
@@ -119,23 +135,26 @@ const { rows, updateRow } = useStudentsData()
 
 const student = computed(() => rows.value.find(r => r.id === id))
 
+const activeTab = ref<'general' | 'parent' | 'academic'>('general')
+const tabs = [
+  { key: 'general', label: 'ข้อมูลนักเรียน' },
+  { key: 'parent', label: 'ผู้ปกครอง' },
+  { key: 'academic', label: 'ประวัติวิชาการ' },
+]
+
 const showEdit = ref(false)
-const editForm = ref({ name: '', class: '', advisor: '', gpa: '', discipline: 0, status: '' })
+const editForm = ref({ name: '', class: '', advisor: '', gpa: '', discipline: 0 })
 
 watch(showEdit, (v) => {
   if (v && student.value) {
     const s = student.value
-    editForm.value = { name: s.name, class: s.class, advisor: s.advisor, gpa: s.gpa, discipline: s.discipline, status: s.status }
+    editForm.value = { name: s.name, class: s.class, advisor: s.advisor, gpa: s.gpa, discipline: s.discipline }
   }
 })
 
 function saveEdit() {
   updateRow(id, editForm.value)
   showEdit.value = false
-}
-
-function doApprove() {
-  updateRow(id, { status: 'ปกติ' })
 }
 
 const gpaClass = computed(() => {
@@ -156,42 +175,55 @@ const discLabel = computed(() => {
 
 <style scoped>
 .page { display: flex; flex-direction: column; gap: 20px; }
-.back-row { display: flex; }
-.btn-back { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; color: #1d4ed8; font-size: 0.875rem; font-weight: 500; cursor: pointer; padding: 6px 0; font-family: inherit; }
-.btn-back:hover { text-decoration: underline; }
-.not-found { text-align: center; padding: 60px 0; color: #6b7280; }
-.profile-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 28px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
-.avatar { width: 64px; height: 64px; background: linear-gradient(135deg, #0ea5e9, #1d4ed8); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.4rem; font-weight: 700; flex-shrink: 0; }
-.profile-info { flex: 1; min-width: 200px; }
-.profile-name { font-size: 1.2rem; font-weight: 700; color: #111827; margin: 0 0 4px; }
-.profile-sub { font-size: 0.875rem; color: #6b7280; margin: 0 0 6px; }
-.profile-id { font-size: 0.8rem; color: #9ca3af; margin: 0; }
-.id-badge { background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 5px; padding: 1px 7px; font-size: 0.75rem; font-family: monospace; color: #374151; }
-.profile-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 7px; padding: 8px 16px; font-size: 0.875rem; font-weight: 500; cursor: pointer; border: 1px solid transparent; font-family: inherit; transition: background 0.12s; }
-.btn-edit-lg { background: #fff; color: #374151; border-color: #e5e7eb; }
-.btn-edit-lg:hover { background: #f9fafb; }
-.btn-approve-lg { background: #16a34a; color: #fff; }
-.btn-approve-lg:hover { background: #15803d; }
-.btn-secondary { background: #fff; color: #374151; border-color: #e5e7eb; }
-.btn-secondary:hover { background: #f9fafb; }
-.btn-primary { background: #1d4ed8; color: #fff; }
-.btn-primary:hover { background: #1e40af; }
-.sections { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-.section-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; }
-.section-title { font-size: 0.875rem; font-weight: 700; color: #111827; margin: 0 0 14px; padding-bottom: 10px; border-bottom: 1px solid #f3f4f6; }
-.field { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid #f9fafb; }
-.field:last-child { border-bottom: none; }
-.fl { font-size: 0.8rem; color: #9ca3af; min-width: 120px; }
-.fv { font-size: 0.875rem; color: #111827; font-weight: 500; text-align: right; }
-.gpa-high { color: #16a34a; font-weight: 700; }
+
+.not-found { text-align: center; padding: 60px 0; color: #6b7280; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.header-left { display: flex; align-items: flex-start; gap: 12px; }
+.page-title { font-size: 1.25rem; font-weight: 700; color: #111827; margin: 0 0 4px; }
+.page-desc { font-size: 0.85rem; color: #6b7280; margin: 0; }
+.header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.btn-back { color: #6b7280; padding: 7px 12px; font-size: 0.82rem; border-color: #d1d5db; margin-top: 2px; }
+.btn-back:hover { background: #f3f4f6; }
+
+.tab-bar { display: flex; gap: 0; border-bottom: 2px solid #e5e7eb; }
+.tab-btn { padding: 9px 18px; font-size: 0.875rem; font-weight: 500; color: #6b7280; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; font-family: inherit; transition: color 0.12s, border-color 0.12s; white-space: nowrap; }
+.tab-btn:hover { color: #374151; }
+.tab-btn--active { color: #1d4ed8; border-bottom-color: #1d4ed8; }
+
+.detail-card { background: #fff; border: 1px solid #e8eaed; border-radius: 12px; padding: 24px; }
+.section-title { font-size: 0.75rem; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 18px; padding-bottom: 10px; border-bottom: 1px solid #f3f4f6; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 32px; }
+.detail-item { display: flex; flex-direction: column; gap: 4px; }
+.detail-label { font-size: 0.72rem; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; }
+.detail-value { font-size: 0.9rem; color: #111827; font-weight: 500; }
+.detail-value.mono { font-family: monospace; letter-spacing: 0.04em; }
+.disc-max { font-size: 0.75rem; color: #9ca3af; font-weight: 400; margin-left: 2px; }
+
+.gpa-high { color: #16a34a; }
 .gpa-mid { color: #d97706; }
 .gpa-low { color: #dc2626; }
-.disc { font-size: 1rem; font-weight: 700; }
-.disc-max { font-size: 0.75rem; color: #9ca3af; font-weight: 400; margin-left: 2px; }
 .disc-high { color: #16a34a; }
 .disc-mid { color: #d97706; }
 .disc-low { color: #dc2626; }
+
+.empty-state { text-align: center; color: #9ca3af; font-size: 0.875rem; padding: 32px 0; }
+
+.history-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px 18px; margin-bottom: 10px; background: #fafafa; }
+.history-card:last-child { margin-bottom: 0; }
+.hc-title { font-size: 0.9rem; font-weight: 700; color: #111827; margin-bottom: 6px; }
+.hc-meta { display: flex; gap: 12px; font-size: 0.78rem; color: #6b7280; }
+
+.btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; padding: 8px 14px; font-size: 0.875rem; font-weight: 500; cursor: pointer; border: 1px solid #d1d5db; background: #fff; color: #374151; font-family: inherit; transition: background 0.12s; }
+.btn:hover { background: #f9fafb; }
+.btn-edit { border-color: #d1d5db; background: #f9fafb; }
+.btn-edit:hover { background: #f3f4f6; }
+.btn-secondary { background: #fff; color: #374151; border-color: #e5e7eb; }
+.btn-secondary:hover { background: #f9fafb; }
+.btn-primary { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+.btn-primary:hover { background: #1e40af; }
+
 .form-body { display: flex; flex-direction: column; gap: 14px; }
 .form-row { display: flex; gap: 12px; }
 .form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; }

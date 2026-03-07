@@ -81,11 +81,13 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useCalendarData, type CalendarEvent } from '~/composables/useCalendarData'
+import { useAnnouncementsData } from '~/composables/useAnnouncementsData'
 
 definePageMeta({ layout: 'staff' })
 
 const { loading } = usePageLoad()
 const { events } = useCalendarData()
+const { rows: announcementRows } = useAnnouncementsData()
 
 const search = ref('')
 const filterType = ref('')
@@ -106,12 +108,44 @@ const cols = [
   { key: 'description', label: 'รายละเอียด' },
 ]
 
+function toIsoDate(input: string) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(input)) return input
+  const m = input.match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
+  if (!m) return input
+  const day = m[1]
+  const month = m[2]
+  const rawYear = Number(m[3])
+  const year = rawYear > 2400 ? rawYear - 543 : rawYear
+  return `${year}-${month}-${day}`
+}
+
+function mapAnnouncementType(category: string): string {
+  if (category === 'วิชาการ') return 'วิชาการ'
+  if (category === 'สอบ') return 'สอบ'
+  if (category === 'วันหยุด') return 'วันหยุด'
+  return 'กิจกรรม'
+}
+
+const mergedEvents = computed<CalendarEvent[]>(() => {
+  const base = events.value.map((e) => ({ ...e, date: toIsoDate(e.date), endDate: e.endDate ? toIsoDate(e.endDate) : undefined }))
+  const fromAnnouncements = announcementRows.value
+    .filter(a => a.status === 'เผยแพร่แล้ว')
+    .map<CalendarEvent>((a) => ({
+      id: `ANN-${a.id}`,
+      title: a.title,
+      date: toIsoDate(a.date),
+      type: mapAnnouncementType(a.category),
+      description: `ประกาศโดย ${a.author}`,
+    }))
+  return [...base, ...fromAnnouncements]
+})
+
 const filteredEvents = computed(() =>
-  events.value.filter((e: CalendarEvent) => {
+  mergedEvents.value.filter((e: CalendarEvent) => {
     const q = search.value.toLowerCase()
     const matchSearch = !q || e.title.toLowerCase().includes(q)
     const matchType = !filterType.value || e.type === filterType.value
-    const matchMonth = !filterMonth.value || e.date.startsWith(`2568-${filterMonth.value}`) || e.date.startsWith(`2025-${filterMonth.value}`)
+    const matchMonth = !filterMonth.value || e.date.slice(5, 7) === filterMonth.value
     return matchSearch && matchType && matchMonth
   })
 )
@@ -134,7 +168,7 @@ const calCells = computed(() => {
   for (let d = 1; d <= lastDay.getDate(); d++) {
     const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
     const isTodayFlag = year === today.getFullYear() && month === today.getMonth() && d === today.getDate()
-    const dayEvents = events.value.filter(e => e.date === iso)
+    const dayEvents = mergedEvents.value.filter(e => e.date === iso)
     cells.push({ key: iso, day: d, inMonth: true, isToday: isTodayFlag, events: dayEvents })
   }
   const remaining = 7 - (cells.length % 7)

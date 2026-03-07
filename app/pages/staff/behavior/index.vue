@@ -206,9 +206,9 @@ function clearFilters() { search.value = ''; filterType.value = '' }
 .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
 .btn-edit { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
 .btn-edit:hover { background: #dbeafe; }
-.btn-delete { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
+.btn-delete { background: #fff5f5; color: #dc2626; border-color: #fecaca; }
 .btn-delete:hover { background: #fee2e2; }
-.action-btns { display: flex; gap: 6px; align-items: center; }
+.action-btns { display: flex; gap: 6px; align-items: center; justify-content: flex-end; flex-wrap: nowrap; }
 .mine-note { font-size: 0.75rem; color: #9ca3af; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .field { display: flex; flex-direction: column; gap: 5px; font-size: 0.875rem; font-weight: 500; color: #374151; }

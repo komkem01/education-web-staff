@@ -12,7 +12,11 @@
       <div class="filter-row">
         <div class="search-wrap">
           <svg class="search-icon" width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="#9ca3af" stroke-width="1.4"/><path d="M10 10l3 3" stroke="#9ca3af" stroke-width="1.4" stroke-linecap="round"/></svg>
-          <input v-model="search" class="input search" type="text" placeholder="ค้นหาชื่อห้องหรือครูที่ปรึกษา..." autocomplete="off" />
+          <input v-model="search" class="input search" list="classroom-search-list" type="text" placeholder="ค้นหาชื่อห้องหรือครูที่ปรึกษา..." autocomplete="off" />
+          <datalist id="classroom-search-list">
+            <option v-for="r in filteredRows" :key="r.id" :value="r.name" />
+            <option v-for="r in filteredRows" :key="r.id + '-advisor'" :value="r.advisor" />
+          </datalist>
         </div>
         <select v-model="filterLevel" class="input sel">
           <option value="">ทุกระดับชั้น</option>
@@ -25,24 +29,10 @@
       <StaffDataTable title="รายการห้องเรียน" :columns="cols" :rows="filteredRows">
         <template #rowActions="{ row }">
           <div class="action-btns">
-            <button type="button" class="btn btn-sm btn-detail" @click="openDetail(row as unknown as ClassroomRow)">รายละเอียด</button>
+            <button type="button" class="btn btn-sm btn-detail" @click="navigateTo('/staff/classrooms/' + (row as unknown as ClassroomRow).id)">รายละเอียด</button>
           </div>
         </template>
       </StaffDataTable>
-
-      <!-- Detail Modal -->
-      <StaffAppModal v-model="showDetail" title="ข้อมูลห้องเรียน" size="sm">
-        <template #footer>
-          <button type="button" class="btn btn-primary" @click="showDetail = false">ปิด</button>
-        </template>
-        <div class="detail-body" v-if="detailRow">
-          <div class="detail-row"><span class="detail-label">ชื่อห้อง</span><span class="detail-value">{{ detailRow.name }}</span></div>
-          <div class="detail-row"><span class="detail-label">ระดับชั้น</span><span class="detail-value">{{ detailRow.level }}</span></div>
-          <div class="detail-row"><span class="detail-label">ครูที่ปรึกษา</span><span class="detail-value">{{ detailRow.advisor }}</span></div>
-          <div class="detail-row"><span class="detail-label">ห้องเรียน</span><span class="detail-value">{{ detailRow.room }}</span></div>
-          <div class="detail-row"><span class="detail-label">จำนวนนักเรียน</span><span class="detail-value">{{ detailRow.students }} คน</span></div>
-        </div>
-      </StaffAppModal>
     </template>
   </div>
 </template>
@@ -58,8 +48,6 @@ const { rows } = useClassroomsData()
 
 const search = ref('')
 const filterLevel = ref('')
-const showDetail = ref(false)
-const detailRow = ref<ClassroomRow | null>(null)
 
 const cols = [
   { key: 'name', label: 'ห้อง' },
@@ -77,11 +65,6 @@ const filteredRows = computed(() =>
     return matchSearch && matchLevel
   })
 )
-
-function openDetail(row: ClassroomRow) {
-  detailRow.value = row
-  showDetail.value = true
-}
 
 function clearFilters() {
   search.value = ''
@@ -109,9 +92,5 @@ function clearFilters() {
 .btn-detail:hover { background: #f9fafb; }
 .btn-primary { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
 .btn-primary:hover { background: #1e40af; }
-.action-btns { display: flex; gap: 6px; }
-.detail-body { display: flex; flex-direction: column; gap: 14px; }
-.detail-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.detail-label { font-size: 0.83rem; color: #9ca3af; font-weight: 500; min-width: 120px; }
-.detail-value { font-size: 0.875rem; color: #111827; font-weight: 500; }
+.action-btns { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: nowrap; }
 </style>

@@ -54,10 +54,10 @@
           </template>
           <template #rowActions="{ row }">
             <div class="action-btns">
-              <button type="button" class="btn btn-sm btn-detail" @click="openRegDetail(row as unknown as RegistrationRow)">รายละเอียด</button>
+              <button type="button" class="btn btn-sm btn-detail" @click="navigateTo('/staff/registrar/' + (row as unknown as RegistrationRow).id)">รายละเอียด</button>
               <template v-if="(row as unknown as RegistrationRow).status === 'รอตรวจสอบ'">
-                <button type="button" class="btn btn-sm btn-approve" @click="approveReg(row as unknown as RegistrationRow)">อนุมัติ</button>
-                <button type="button" class="btn btn-sm btn-reject" @click="rejectReg(row as unknown as RegistrationRow)">ปฏิเสธ</button>
+                <button type="button" class="btn btn-sm btn-approve" @click="requestRegAction(row as unknown as RegistrationRow, 'approve')">อนุมัติ</button>
+                <button type="button" class="btn btn-sm btn-reject" @click="requestRegAction(row as unknown as RegistrationRow, 'reject')">ปฏิเสธ</button>
               </template>
             </div>
           </template>
@@ -68,8 +68,8 @@
           <template #footer>
             <button type="button" class="btn btn-secondary" @click="showRegDetail = false">ปิด</button>
             <template v-if="regDetailRow?.status === 'รอตรวจสอบ'">
-              <button type="button" class="btn btn-reject-footer" @click="rejectReg(regDetailRow!)">ปฏิเสธ</button>
-              <button type="button" class="btn btn-approve-footer" @click="approveReg(regDetailRow!)">อนุมัติลงทะเบียน</button>
+              <button type="button" class="btn btn-reject-footer" @click="requestRegAction(regDetailRow!, 'reject')">ปฏิเสธ</button>
+              <button type="button" class="btn btn-approve-footer" @click="requestRegAction(regDetailRow!, 'approve')">อนุมัติลงทะเบียน</button>
             </template>
           </template>
           <div v-if="regDetailRow" class="detail-body">
@@ -91,6 +91,24 @@
               <StaffStatusBadge :label="regDetailRow.status" :variant="regDetailRow.status === 'ลงทะเบียนแล้ว' ? 'approved' : regDetailRow.status === 'รอตรวจสอบ' ? 'pending' : 'default'" />
             </div>
           </div>
+        </StaffAppModal>
+
+        <!-- Confirm Reg Action Modal -->
+        <StaffAppModal v-model="showRegConfirm" :title="regConfirmType === 'approve' ? 'ยืนยันการอนุมัติ' : 'ยืนยันการปฏิเสธ'" size="sm">
+          <template #footer>
+            <button type="button" class="btn btn-secondary" @click="showRegConfirm = false">ยกเลิก</button>
+            <button
+              type="button"
+              class="btn"
+              :class="regConfirmType === 'approve' ? 'btn-approve-footer' : 'btn-reject-footer'"
+              @click="confirmRegAction"
+            >{{ regConfirmType === 'approve' ? 'ยืนยันอนุมัติ' : 'ยืนยันปฏิเสธ' }}</button>
+          </template>
+          <p class="confirm-text" v-if="regConfirmTarget">
+            {{ regConfirmType === 'approve' ? 'ยืนยันอนุมัติการลงทะเบียนของ' : 'ยืนยันปฏิเสธการลงทะเบียนของ' }}
+            <strong>{{ regConfirmTarget.prefix }}{{ regConfirmTarget.studentName }}</strong>
+            ใช่หรือไม่?
+          </p>
         </StaffAppModal>
       </div>
 
@@ -127,11 +145,11 @@
           </template>
           <template #rowActions="{ row }">
             <div class="action-btns">
-              <button type="button" class="btn btn-sm btn-detail" @click="openTxDetail(row as unknown as TransferRow)">รายละเอียด</button>
+              <button type="button" class="btn btn-sm btn-detail" @click="navigateTo('/staff/registrar/' + (row as unknown as TransferRow).id)">รายละเอียด</button>
               <button
                 v-if="(row as unknown as TransferRow).status === 'รอดำเนินการ'"
                 type="button" class="btn btn-sm btn-approve"
-                @click="completeTransfer(row as unknown as TransferRow)"
+                @click="requestTransferComplete(row as unknown as TransferRow)"
               >ดำเนินการเสร็จ</button>
             </div>
           </template>
@@ -141,7 +159,7 @@
         <StaffAppModal v-model="showTxDetail" title="รายละเอียดการย้ายเรียน" size="md">
           <template #footer>
             <button type="button" class="btn btn-secondary" @click="showTxDetail = false">ปิด</button>
-            <button v-if="txDetailRow?.status === 'รอดำเนินการ'" type="button" class="btn btn-approve-footer" @click="completeTransfer(txDetailRow!)">ดำเนินการเสร็จ</button>
+            <button v-if="txDetailRow?.status === 'รอดำเนินการ'" type="button" class="btn btn-approve-footer" @click="requestTransferComplete(txDetailRow!)">ดำเนินการเสร็จ</button>
           </template>
           <div v-if="txDetailRow" class="detail-body">
             <div class="detail-row"><span class="dl">รหัส</span><span class="id-badge">{{ txDetailRow.id }}</span></div>
@@ -161,6 +179,18 @@
               <StaffStatusBadge :label="txDetailRow.status" :variant="txDetailRow.status === 'เสร็จสิ้น' ? 'approved' : txDetailRow.status === 'รอดำเนินการ' ? 'pending' : 'default'" />
             </div>
           </div>
+        </StaffAppModal>
+
+        <!-- Confirm Transfer Action Modal -->
+        <StaffAppModal v-model="showTxConfirm" title="ยืนยันดำเนินการย้ายเรียน" size="sm">
+          <template #footer>
+            <button type="button" class="btn btn-secondary" @click="showTxConfirm = false">ยกเลิก</button>
+            <button type="button" class="btn btn-approve-footer" @click="confirmTransferComplete">ยืนยันดำเนินการเสร็จ</button>
+          </template>
+          <p class="confirm-text" v-if="txConfirmTarget">
+            ยืนยันว่ารายการย้ายเรียนของ <strong>{{ txConfirmTarget.studentName }}</strong>
+            ดำเนินการเสร็จสิ้นแล้วใช่หรือไม่?
+          </p>
         </StaffAppModal>
       </div>
     </template>
@@ -185,6 +215,9 @@ const regFilterStatus = ref('')
 const regFilterClass = ref('')
 const showRegDetail = ref(false)
 const regDetailRow = ref<RegistrationRow | null>(null)
+const showRegConfirm = ref(false)
+const regConfirmType = ref<'approve' | 'reject'>('approve')
+const regConfirmTarget = ref<RegistrationRow | null>(null)
 
 const regCols = [
   { key: 'id', label: 'รหัส' },
@@ -209,6 +242,12 @@ const pendingRegCount = computed(() => registrations.value.filter(r => r.status 
 
 function openRegDetail(row: RegistrationRow) { regDetailRow.value = row; showRegDetail.value = true }
 
+function requestRegAction(row: RegistrationRow, type: 'approve' | 'reject') {
+  regConfirmTarget.value = row
+  regConfirmType.value = type
+  showRegConfirm.value = true
+}
+
 function approveReg(row: RegistrationRow) {
   const today = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })
   const idx = registrations.value.findIndex(r => r.id === row.id)
@@ -223,6 +262,14 @@ function rejectReg(row: RegistrationRow) {
   showRegDetail.value = false
 }
 
+function confirmRegAction() {
+  if (!regConfirmTarget.value) return
+  if (regConfirmType.value === 'approve') approveReg(regConfirmTarget.value)
+  else rejectReg(regConfirmTarget.value)
+  showRegConfirm.value = false
+  regConfirmTarget.value = null
+}
+
 function clearRegFilters() { regSearch.value = ''; regFilterStatus.value = ''; regFilterClass.value = '' }
 
 // --- Transfers ---
@@ -231,6 +278,8 @@ const txFilterType = ref('')
 const txFilterStatus = ref('')
 const showTxDetail = ref(false)
 const txDetailRow = ref<TransferRow | null>(null)
+const showTxConfirm = ref(false)
+const txConfirmTarget = ref<TransferRow | null>(null)
 
 const txCols = [
   { key: 'id', label: 'รหัส' },
@@ -256,11 +305,23 @@ const pendingTransferCount = computed(() => transfers.value.filter(r => r.status
 
 function openTxDetail(row: TransferRow) { txDetailRow.value = row; showTxDetail.value = true }
 
+function requestTransferComplete(row: TransferRow) {
+  txConfirmTarget.value = row
+  showTxConfirm.value = true
+}
+
 function completeTransfer(row: TransferRow) {
   const today = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' })
   const idx = transfers.value.findIndex(r => r.id === row.id)
   if (idx !== -1) transfers.value[idx] = { ...transfers.value[idx], status: 'เสร็จสิ้น', completedAt: today, handledBy }
   showTxDetail.value = false
+}
+
+function confirmTransferComplete() {
+  if (!txConfirmTarget.value) return
+  completeTransfer(txConfirmTarget.value)
+  showTxConfirm.value = false
+  txConfirmTarget.value = null
 }
 
 function clearTxFilters() { txSearch.value = ''; txFilterType.value = ''; txFilterStatus.value = '' }
@@ -301,10 +362,10 @@ function clearTxFilters() { txSearch.value = ''; txFilterType.value = ''; txFilt
 .btn-approve-footer:hover { background: #15803d; }
 .btn-reject { background: #fff5f5; color: #dc2626; border-color: #fecaca; }
 .btn-reject:hover { background: #fee2e2; }
-.btn-reject-footer { background: #fff; color: #dc2626; border-color: #fecaca; }
-.btn-reject-footer:hover { background: #fee2e2; }
+.btn-reject-footer { background: #dc2626; color: #fff; border-color: #dc2626; }
+.btn-reject-footer:hover { background: #b91c1c; }
 
-.action-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.action-btns { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: nowrap; }
 
 .type-in { background: #f0fdf4; color: #16a34a; padding: 2px 8px; border-radius: 9999px; font-size: 0.78rem; font-weight: 600; }
 .type-out { background: #fef2f2; color: #dc2626; padding: 2px 8px; border-radius: 9999px; font-size: 0.78rem; font-weight: 600; }

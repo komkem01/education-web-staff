@@ -52,7 +52,7 @@
           </template>
           <template #rowActions="{ row }">
             <div class="action-btns">
-              <button type="button" class="btn btn-sm btn-detail" @click="openReqDetail(row as unknown as DocumentRequest)">รายละเอียด</button>
+              <button type="button" class="btn btn-sm btn-detail" @click="navigateTo('/staff/documents/' + (row as unknown as DocumentRequest).id)">รายละเอียด</button>
               <button
                 v-if="(row as unknown as DocumentRequest).status === 'ร้องขอ'"
                 type="button" class="btn btn-sm btn-process"
@@ -277,7 +277,7 @@ function saveTemplate() {
 .btn-download { background: #f5f3ff; color: #7c3aed; border-color: #ddd6fe; }
 .btn-download:hover { background: #ede9fe; }
 
-.action-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.action-btns { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: nowrap; }
 
 .detail-body { display: flex; flex-direction: column; gap: 12px; }
 .detail-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }

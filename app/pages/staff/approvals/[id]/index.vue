@@ -1,18 +1,28 @@
 <template>
   <div class="page">
-    <div class="back-row">
-      <button type="button" class="btn-back" @click="navigateTo('/staff/approvals')">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        กลับรายการคำขอ
-      </button>
-    </div>
-
     <div v-if="!req" class="not-found">
+      <button type="button" class="btn btn-back" @click="navigateTo('/staff/approvals')">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7 2L3 6l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        กลับ
+      </button>
       <p>ไม่พบคำขอ {{ id }}</p>
       <button type="button" class="btn btn-secondary" @click="navigateTo('/staff/approvals')">กลับ</button>
     </div>
 
     <template v-else>
+      <div class="page-header">
+        <div class="header-left">
+          <button type="button" class="btn btn-back" @click="navigateTo('/staff/approvals')">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7 2L3 6l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            กลับ
+          </button>
+          <div>
+            <h2 class="page-title">รายละเอียดคำขออนุมัติ</h2>
+            <p class="page-desc">{{ req.id }} · {{ req.requesterName }}</p>
+          </div>
+        </div>
+      </div>
+
       <!-- Request Header -->
       <div class="req-card">
         <div class="req-header-content">
@@ -132,10 +142,13 @@ function confirmAction() {
 
 <style scoped>
 .page { display: flex; flex-direction: column; gap: 20px; }
-.back-row { display: flex; }
-.btn-back { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; color: #1d4ed8; font-size: 0.875rem; font-weight: 500; cursor: pointer; padding: 6px 0; font-family: inherit; }
-.btn-back:hover { text-decoration: underline; }
-.not-found { text-align: center; padding: 60px 0; color: #6b7280; }
+
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.header-left { display: flex; align-items: flex-start; gap: 12px; }
+.page-title { font-size: 1.25rem; font-weight: 700; color: #111827; margin: 0 0 4px; }
+.page-desc { font-size: 0.85rem; color: #6b7280; margin: 0; }
+
+.not-found { text-align: center; padding: 60px 0; color: #6b7280; display: flex; flex-direction: column; align-items: center; gap: 12px; }
 
 .req-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
 .req-header-content { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
@@ -152,6 +165,8 @@ function confirmAction() {
 .resolved-info { font-size: 0.8rem; color: #6b7280; padding-top: 8px; border-top: 1px solid #f3f4f6; }
 
 .btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; padding: 9px 18px; font-size: 0.875rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; font-family: inherit; transition: background 0.12s; }
+.btn-back { color: #6b7280; padding: 7px 12px; font-size: 0.82rem; border-color: #d1d5db; margin-top: 2px; background: #fff; }
+.btn-back:hover { background: #f3f4f6; }
 .btn-approve { background: #16a34a; color: #fff; }
 .btn-approve:hover { background: #15803d; }
 .btn-reject { background: #fff; color: #dc2626; border-color: #fecaca; }
